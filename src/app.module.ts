@@ -1,8 +1,9 @@
 import { Module } from '@nestjs/common';
 import { ConfigModule, ConfigService } from '@nestjs/config';
 import { MongooseModule } from '@nestjs/mongoose';
-import { AppController } from './app.controller';
-import { AppService } from './app.service';
+import { SharedModule } from './shared/shared.module';
+import { UserModule } from './modules/user/user.module';
+import { AuthModule } from './modules/auth/auth.module';
 
 @Module({
   imports: [
@@ -16,9 +17,11 @@ import { AppService } from './app.service';
           'mongodb://127.0.0.1:27017/marketplace',
       }),
     }),
-    // Feature modules (users, products, orders, ...) will be registered here.
+    // Feature modules
+    SharedModule,
+    UserModule,
+    AuthModule,
+    // products, orders, ... registered here as they're built.
   ],
-  controllers: [AppController],
-  providers: [AppService],
 })
-export class AppModule { }
+export class AppModule {}
