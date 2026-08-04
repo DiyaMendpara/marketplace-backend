@@ -42,7 +42,7 @@ describe('AuthController', () => {
   it('login delegates to the service', async () => {
     authService.login.mockResolvedValue('LOGGED_IN');
     await expect(
-      controller.login({ email: 'a@b.com', password: 'x' } as never),
+      controller.login({ email: 'a@b.com', password: 'x' }),
     ).resolves.toBe('LOGGED_IN');
   });
 

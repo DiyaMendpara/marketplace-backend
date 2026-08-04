@@ -55,12 +55,17 @@ describe('AuthService', () => {
         role: 'buyer',
       } as never);
 
-      expect(userModel.findOne).toHaveBeenCalledWith({ email: 'jane@nova.com' });
+      expect(userModel.findOne).toHaveBeenCalledWith({
+        email: 'jane@nova.com',
+      });
       expect(bcrypt.hash).toHaveBeenCalledWith('secret123', expect.any(Number));
       expect(res).toMatchObject({
         data: {
           token: 'signed.jwt.token',
-          user: expect.objectContaining({ email: 'jane@nova.com', role: 'buyer' }),
+          user: expect.objectContaining({
+            email: 'jane@nova.com',
+            role: 'buyer',
+          }),
         },
       });
     });
@@ -95,19 +100,21 @@ describe('AuthService', () => {
       const res = await service.login({
         email: 'jane@nova.com',
         password: 'secret123',
-      } as never);
+      });
 
       expect(res).toMatchObject({ data: { token: 'signed.jwt.token' } });
     });
 
     it('rejects an invalid password', async () => {
       userModel.findOne.mockReturnValue({
-        select: jest.fn().mockResolvedValue({ _id: 'u1', password: 'hashed-pw' }),
+        select: jest
+          .fn()
+          .mockResolvedValue({ _id: 'u1', password: 'hashed-pw' }),
       });
       (bcrypt.compare as jest.Mock).mockResolvedValue(false);
 
       await expect(
-        service.login({ email: 'jane@nova.com', password: 'wrong' } as never),
+        service.login({ email: 'jane@nova.com', password: 'wrong' }),
       ).rejects.toBeInstanceOf(HttpException);
     });
 
@@ -117,7 +124,7 @@ describe('AuthService', () => {
       });
 
       await expect(
-        service.login({ email: 'no@one.com', password: 'x' } as never),
+        service.login({ email: 'no@one.com', password: 'x' }),
       ).rejects.toBeInstanceOf(HttpException);
     });
   });
@@ -132,12 +139,16 @@ describe('AuthService', () => {
       });
 
       const res = await service.getProfile('u1');
-      expect(res).toMatchObject({ data: expect.objectContaining({ _id: 'u1' }) });
+      expect(res).toMatchObject({
+        data: expect.objectContaining({ _id: 'u1' }),
+      });
     });
 
     it('rejects when the user is missing', async () => {
       userModel.findById.mockResolvedValue(null);
-      await expect(service.getProfile('u1')).rejects.toBeInstanceOf(HttpException);
+      await expect(service.getProfile('u1')).rejects.toBeInstanceOf(
+        HttpException,
+      );
     });
   });
 });

@@ -10,6 +10,7 @@ import { AuthGuard } from '@nestjs/passport';
 import { Model } from 'mongoose';
 
 import { User, UserDocument } from '../../../modules/user/model/user.model';
+import type { AuthRequest } from '../../types/auth-request.interface';
 import { messages } from '../../utils/messages';
 
 @Injectable()
@@ -22,7 +23,7 @@ export class JwtAuthGuard extends AuthGuard('jwt') {
   }
 
   async canActivate(context: ExecutionContext): Promise<boolean> {
-    const req = context.switchToHttp().getRequest();
+    const req = context.switchToHttp().getRequest<AuthRequest>();
     const authHeader = req.headers.authorization || req.headers.Authorization;
 
     let token: string | undefined;
@@ -40,7 +41,7 @@ export class JwtAuthGuard extends AuthGuard('jwt') {
     }
 
     try {
-      const payload = this.jwtService.verify(token);
+      const payload = this.jwtService.verify(token) as { user_id: unknown };
       const user = await this.userModel.findById(payload.user_id).lean();
 
       if (!user) {

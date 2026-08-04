@@ -8,6 +8,7 @@ import {
 import { Reflector } from '@nestjs/core';
 
 import { ROLES_KEY } from '../decorators/roles.decorator';
+import type { AuthRequest } from '../../types/auth-request.interface';
 import { messages } from '../../utils/messages';
 
 // Must run AFTER JwtAuthGuard so req.user is populated.
@@ -21,7 +22,7 @@ export class RolesGuard implements CanActivate {
 
     if (requiredRoles.length === 0) return true;
 
-    const req = context.switchToHttp().getRequest();
+    const req = context.switchToHttp().getRequest<AuthRequest>();
     const user = req.user;
 
     if (!user || !user.role) {
