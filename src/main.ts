@@ -15,9 +15,10 @@ async function bootstrap() {
     }),
   );
 
-  // Allow the frontend (Vercel in prod, localhost in dev) to call the API.
+  // Allow the frontend to call the API. Auth uses Bearer tokens (not cookies),
+  // so reflecting any origin is safe here and avoids CLIENT_URL misconfig issues.
   app.enableCors({
-    origin: process.env.CLIENT_URL?.split(',').map((o) => o.trim()) ?? true,
+    origin: true,
     credentials: true,
   });
 
