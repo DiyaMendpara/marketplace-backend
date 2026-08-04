@@ -10,7 +10,11 @@ const sendBadRequest = (msg = 'Bad Request') => {
   );
 };
 
-const sendSuccess = (msg = 'Success', data, meta = {}) => {
+const sendSuccess = (
+  msg = 'Success',
+  data?: unknown,
+  meta: Record<string, unknown> = {},
+) => {
   return {
     msg,
     data,
