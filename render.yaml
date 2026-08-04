@@ -1,0 +1,22 @@
+services:
+  - type: web
+    name: marketplace-backend
+    runtime: node
+    plan: free
+    region: singapore
+    branch: main
+    buildCommand: npm install && npm run build
+    startCommand: npm run start:prod
+    healthCheckPath: /
+    envVars:
+      - key: NODE_VERSION
+        value: "22"
+      # Set these in the Render dashboard (Environment tab) — do NOT commit real values:
+      - key: MONGODB_URI
+        sync: false # Atlas SRV string, e.g. mongodb+srv://user:pass@cluster1.../marketplace
+      - key: CLIENT_URL
+        sync: false # your Vercel URL, e.g. https://marketplace-frontend.vercel.app
+      - key: JWT_SECRET
+        sync: false
+      - key: JWT_EXPIRES_IN
+        value: 7d
