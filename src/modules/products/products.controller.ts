@@ -1,4 +1,4 @@
-import { Controller, Get, Param, Post, Body } from '@nestjs/common';
+import { Controller, Get, Param, Post, Put, Delete, Body, NotFoundException } from '@nestjs/common';
 import { ProductsService } from './products.service';
 import { Product } from './schemas/product.schema';
 
@@ -27,5 +27,27 @@ export class ProductsController {
   @Post('seed')
   async seed(@Body() products: Partial<Product>[]) {
     return this.productsService.seed(products);
+  }
+
+  @Post()
+  async create(@Body() product: Partial<Product>) {
+    const created = await this.productsService.create(product);
+    const { _id, ...rest } = created.toObject();
+    return { id: _id.toString(), ...rest };
+  }
+
+  @Put(':id')
+  async update(@Param('id') id: string, @Body() product: Partial<Product>) {
+    const updated = await this.productsService.update(id, product);
+    if (!updated) throw new NotFoundException('Product not found');
+    const { _id, ...rest } = updated.toObject();
+    return { id: _id.toString(), ...rest };
+  }
+
+  @Delete(':id')
+  async remove(@Param('id') id: string) {
+    const deleted = await this.productsService.remove(id);
+    if (!deleted) throw new NotFoundException('Product not found');
+    return { id };
   }
 }

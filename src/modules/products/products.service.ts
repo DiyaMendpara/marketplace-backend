@@ -22,4 +22,16 @@ export class ProductsService {
     const inserted = await this.productModel.insertMany(products);
     return { insertedCount: inserted.length };
   }
+
+  async create(product: Partial<Product>): Promise<ProductDocument> {
+    return this.productModel.create(product);
+  }
+
+  async update(id: string, product: Partial<Product>): Promise<ProductDocument | null> {
+    return this.productModel.findByIdAndUpdate(id, product, { new: true }).exec();
+  }
+
+  async remove(id: string): Promise<ProductDocument | null> {
+    return this.productModel.findByIdAndDelete(id).exec();
+  }
 }

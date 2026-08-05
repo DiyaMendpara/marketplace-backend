@@ -7,6 +7,9 @@ import { RoleModule } from './modules/role/role.module';
 import { UserModule } from './modules/user/user.module';
 import { AuthModule } from './modules/auth/auth.module';
 import { ProductsModule } from './modules/products/products.module';
+import { AssistantModule } from './modules/assistant/assistant.module';
+import { NotificationsModule } from './modules/notifications/notifications.module';
+import { OrdersModule } from './modules/orders/orders.module';
 
 @Module({
   imports: [
@@ -27,6 +30,9 @@ import { ProductsModule } from './modules/products/products.module';
     UserModule,
     AuthModule,
     ProductsModule,
+    AssistantModule,
+    NotificationsModule,
+    OrdersModule,
     // products, orders, ... registered here as they're built.
   ],
 })
