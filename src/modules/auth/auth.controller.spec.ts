@@ -11,6 +11,8 @@ describe('AuthController', () => {
     register: jest.fn(),
     login: jest.fn(),
     getProfile: jest.fn(),
+    updateProfile: jest.fn(),
+    changePassword: jest.fn(),
   };
 
   beforeEach(async () => {
@@ -50,5 +52,27 @@ describe('AuthController', () => {
     authService.getProfile.mockResolvedValue('PROFILE');
     await expect(controller.getProfile('u1')).resolves.toBe('PROFILE');
     expect(authService.getProfile).toHaveBeenCalledWith('u1');
+  });
+
+  it('updateProfile passes user id + body through', async () => {
+    authService.updateProfile.mockResolvedValue('UPDATED');
+    await expect(
+      controller.updateProfile('u1', { name: 'Jane' } as never),
+    ).resolves.toBe('UPDATED');
+    expect(authService.updateProfile).toHaveBeenCalledWith('u1', { name: 'Jane' });
+  });
+
+  it('changePassword passes user id + body through', async () => {
+    authService.changePassword.mockResolvedValue('CHANGED');
+    await expect(
+      controller.changePassword('u1', {
+        currentPassword: 'a',
+        newPassword: 'bbbbbb',
+      } as never),
+    ).resolves.toBe('CHANGED');
+    expect(authService.changePassword).toHaveBeenCalledWith('u1', {
+      currentPassword: 'a',
+      newPassword: 'bbbbbb',
+    });
   });
 });

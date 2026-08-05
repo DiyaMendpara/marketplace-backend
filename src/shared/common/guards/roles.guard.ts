@@ -8,17 +8,23 @@ import {
 import { Reflector } from '@nestjs/core';
 
 import { ROLES_KEY } from '../decorators/roles.decorator';
+import type { UserRole } from '../../../modules/user/model/user.model';
 import type { AuthRequest } from '../../types/auth-request.interface';
 import { messages } from '../../utils/messages';
 
 // Must run AFTER JwtAuthGuard so req.user is populated.
 @Injectable()
 export class RolesGuard implements CanActivate {
-  constructor(private reflector: Reflector) {}
+  constructor(private reflector: Reflector) { }
 
   canActivate(context: ExecutionContext): boolean {
+    // Read @Roles from both the handler and the controller class, so a
+    // class-level @Roles('admin') protects every route in the controller.
     const requiredRoles =
-      this.reflector.get<string[]>(ROLES_KEY, context.getHandler()) || [];
+      this.reflector.getAllAndOverride<UserRole[]>(ROLES_KEY, [
+        context.getHandler(),
+        context.getClass(),
+      ]) || [];
 
     if (requiredRoles.length === 0) return true;
 

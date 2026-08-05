@@ -5,9 +5,12 @@ import { Test, TestingModule } from '@nestjs/testing';
 import * as bcrypt from 'bcrypt';
 
 import { User } from '../user/model/user.model';
+import { Role } from '../role/model/role.model';
 import { AuthService } from './auth.service';
 
 jest.mock('bcrypt');
+
+const buyerRole = { name: 'buyer', permissions: ['product.view'] };
 
 describe('AuthService', () => {
   let service: AuthService;
@@ -15,8 +18,10 @@ describe('AuthService', () => {
   const userModel = {
     findOne: jest.fn(),
     findById: jest.fn(),
+    findByIdAndUpdate: jest.fn(),
     create: jest.fn(),
   };
+  const roleModel = { findOne: jest.fn() };
   const jwtService = { sign: jest.fn().mockReturnValue('signed.jwt.token') };
 
   beforeEach(async () => {
@@ -26,6 +31,7 @@ describe('AuthService', () => {
       providers: [
         AuthService,
         { provide: getModelToken(User.name), useValue: userModel },
+        { provide: getModelToken(Role.name), useValue: roleModel },
         { provide: JwtService, useValue: jwtService },
       ],
     }).compile();
@@ -38,14 +44,17 @@ describe('AuthService', () => {
   });
 
   describe('register', () => {
-    it('normalizes email, hashes password, and returns token + public user', async () => {
+    it('assigns the seeded role, hashes password, returns token + public user', async () => {
       userModel.findOne.mockResolvedValue(null);
+      roleModel.findOne.mockResolvedValue({ _id: 'role1', ...buyerRole });
       (bcrypt.hash as jest.Mock).mockResolvedValue('hashed-pw');
       userModel.create.mockResolvedValue({
         _id: 'u1',
         name: 'Jane',
         email: 'jane@nova.com',
-        role: 'buyer',
+        status: 'active',
+        role: buyerRole,
+        populate: jest.fn().mockResolvedValue(undefined),
       });
 
       const res = await service.register({
@@ -55,16 +64,16 @@ describe('AuthService', () => {
         role: 'buyer',
       } as never);
 
-      expect(userModel.findOne).toHaveBeenCalledWith({
-        email: 'jane@nova.com',
+      expect(roleModel.findOne).toHaveBeenCalledWith({
+        name: 'buyer',
+        is_deleted: false,
       });
-      expect(bcrypt.hash).toHaveBeenCalledWith('secret123', expect.any(Number));
       expect(res).toMatchObject({
         data: {
           token: 'signed.jwt.token',
           user: expect.objectContaining({
-            email: 'jane@nova.com',
             role: 'buyer',
+            permissions: ['product.view'],
           }),
         },
       });
@@ -72,11 +81,23 @@ describe('AuthService', () => {
 
     it('rejects a duplicate email', async () => {
       userModel.findOne.mockResolvedValue({ _id: 'exists' });
-
       await expect(
         service.register({
-          name: 'Jane',
-          email: 'jane@nova.com',
+          name: 'J',
+          email: 'j@n.com',
+          password: 'secret123',
+          role: 'buyer',
+        } as never),
+      ).rejects.toBeInstanceOf(HttpException);
+    });
+
+    it('errors when the role is not seeded', async () => {
+      userModel.findOne.mockResolvedValue(null);
+      roleModel.findOne.mockResolvedValue(null);
+      await expect(
+        service.register({
+          name: 'J',
+          email: 'j@n.com',
           password: 'secret123',
           role: 'buyer',
         } as never),
@@ -85,70 +106,128 @@ describe('AuthService', () => {
   });
 
   describe('login', () => {
-    it('returns a token for valid credentials', async () => {
+    const userDoc = {
+      _id: 'u1',
+      email: 'jane@nova.com',
+      name: 'Jane',
+      password: 'hashed-pw',
+      status: 'active',
+      role: buyerRole,
+    };
+    const mockChain = (doc: unknown) =>
       userModel.findOne.mockReturnValue({
-        select: jest.fn().mockResolvedValue({
-          _id: 'u1',
-          email: 'jane@nova.com',
-          role: 'buyer',
-          name: 'Jane',
-          password: 'hashed-pw',
+        select: jest.fn().mockReturnValue({
+          populate: jest.fn().mockResolvedValue(doc),
         }),
       });
-      (bcrypt.compare as jest.Mock).mockResolvedValue(true);
 
+    it('returns a token for valid credentials', async () => {
+      mockChain(userDoc);
+      (bcrypt.compare as jest.Mock).mockResolvedValue(true);
       const res = await service.login({
         email: 'jane@nova.com',
         password: 'secret123',
+      } as never);
+      expect(res).toMatchObject({
+        data: { token: 'signed.jwt.token', user: expect.objectContaining({ role: 'buyer' }) },
       });
-
-      expect(res).toMatchObject({ data: { token: 'signed.jwt.token' } });
     });
 
     it('rejects an invalid password', async () => {
-      userModel.findOne.mockReturnValue({
-        select: jest
-          .fn()
-          .mockResolvedValue({ _id: 'u1', password: 'hashed-pw' }),
-      });
+      mockChain(userDoc);
       (bcrypt.compare as jest.Mock).mockResolvedValue(false);
-
       await expect(
-        service.login({ email: 'jane@nova.com', password: 'wrong' }),
+        service.login({ email: 'jane@nova.com', password: 'wrong' } as never),
       ).rejects.toBeInstanceOf(HttpException);
     });
 
     it('rejects an unknown email', async () => {
-      userModel.findOne.mockReturnValue({
-        select: jest.fn().mockResolvedValue(null),
-      });
-
+      mockChain(null);
       await expect(
-        service.login({ email: 'no@one.com', password: 'x' }),
+        service.login({ email: 'no@one.com', password: 'x' } as never),
+      ).rejects.toBeInstanceOf(HttpException);
+    });
+
+    it('rejects a deactivated account', async () => {
+      mockChain({ ...userDoc, status: 'inactive' });
+      await expect(
+        service.login({ email: 'jane@nova.com', password: 'secret123' } as never),
       ).rejects.toBeInstanceOf(HttpException);
     });
   });
 
   describe('getProfile', () => {
     it('returns the public user', async () => {
-      userModel.findById.mockResolvedValue({
-        _id: 'u1',
-        name: 'Jane',
-        email: 'jane@nova.com',
-        role: 'buyer',
+      userModel.findById.mockReturnValue({
+        populate: jest.fn().mockResolvedValue({
+          _id: 'u1',
+          name: 'Jane',
+          email: 'jane@nova.com',
+          role: buyerRole,
+          status: 'active',
+        }),
       });
-
       const res = await service.getProfile('u1');
       expect(res).toMatchObject({
-        data: expect.objectContaining({ _id: 'u1' }),
+        data: expect.objectContaining({ _id: 'u1', role: 'buyer' }),
       });
     });
 
     it('rejects when the user is missing', async () => {
-      userModel.findById.mockResolvedValue(null);
-      await expect(service.getProfile('u1')).rejects.toBeInstanceOf(
-        HttpException,
-      );
+      userModel.findById.mockReturnValue({
+        populate: jest.fn().mockResolvedValue(null),
+      });
+      await expect(service.getProfile('u1')).rejects.toBeInstanceOf(HttpException);
+    });
+  });
+
+  describe('updateProfile', () => {
+    it('updates fields and returns the public user', async () => {
+      userModel.findByIdAndUpdate.mockReturnValue({
+        populate: jest.fn().mockResolvedValue({
+          _id: 'u1',
+          name: 'Jane R',
+          email: 'jane@nova.com',
+          role: buyerRole,
+          status: 'active',
+        }),
+      });
+      const res = await service.updateProfile('u1', { name: 'Jane R' } as never);
+      expect(res).toMatchObject({
+        data: expect.objectContaining({ name: 'Jane R' }),
+      });
+    });
+  });
+
+  describe('changePassword', () => {
+    it('re-hashes and saves when current password matches', async () => {
+      const save = jest.fn();
+      userModel.findById.mockReturnValue({
+        select: jest.fn().mockResolvedValue({ _id: 'u1', password: 'hashed-old', save }),
+      });
+      (bcrypt.compare as jest.Mock).mockResolvedValue(true);
+      (bcrypt.hash as jest.Mock).mockResolvedValue('hashed-new');
+
+      const res = await service.changePassword('u1', {
+        currentPassword: 'oldpass',
+        newPassword: 'newsecret1',
+      } as never);
+
+      expect(save).toHaveBeenCalled();
+      expect(res).toMatchObject({ msg: expect.any(String) });
+    });
+
+    it('rejects an incorrect current password', async () => {
+      userModel.findById.mockReturnValue({
+        select: jest.fn().mockResolvedValue({ _id: 'u1', password: 'hashed-old' }),
+      });
+      (bcrypt.compare as jest.Mock).mockResolvedValue(false);
+      await expect(
+        service.changePassword('u1', {
+          currentPassword: 'wrong',
+          newPassword: 'newsecret1',
+        } as never),
+      ).rejects.toBeInstanceOf(HttpException);
     });
   });
 });

@@ -7,9 +7,10 @@ import {
 import { JwtService } from '@nestjs/jwt';
 import { InjectModel } from '@nestjs/mongoose';
 import { AuthGuard } from '@nestjs/passport';
-import { Model } from 'mongoose';
+import { Model, isValidObjectId } from 'mongoose';
 
-import { User, UserDocument } from '../../../modules/user/model/user.model';
+import { User, UserDocument, UserRole } from '../../../modules/user/model/user.model';
+import { Role, RoleDocument } from '../../../modules/role/model/role.model';
 import type { AuthRequest } from '../../types/auth-request.interface';
 import { messages } from '../../utils/messages';
 
@@ -18,6 +19,7 @@ export class JwtAuthGuard extends AuthGuard('jwt') {
   constructor(
     private readonly jwtService: JwtService,
     @InjectModel(User.name) private userModel: Model<UserDocument>,
+    @InjectModel(Role.name) private roleModel: Model<RoleDocument>,
   ) {
     super();
   }
@@ -51,11 +53,31 @@ export class JwtAuthGuard extends AuthGuard('jwt') {
         );
       }
 
+      // A deleted / deactivated / disabled account is rejected on next request.
+      if (user.is_deleted || user.is_disabled || user.status === 'inactive') {
+        throw new HttpException(
+          { error: 'ACCOUNT_DEACTIVATED', message: messages.auth.account_deactivated },
+          HttpStatus.UNAUTHORIZED,
+        );
+      }
+
+      // Resolve the role -> name + permissions. A missing or legacy (string)
+      // role must NOT fail auth — the user stays logged in with no permissions.
+      let roleDoc: RoleDocument | null = null;
+      if (user.role && isValidObjectId(user.role)) {
+        try {
+          roleDoc = await this.roleModel.findById(user.role).lean();
+        } catch {
+          roleDoc = null;
+        }
+      }
+
       req.user = {
         _id: user._id,
         name: user.name,
         email: user.email,
-        role: user.role,
+        role: roleDoc?.name as unknown as UserRole,
+        permissions: roleDoc?.permissions ?? [],
       };
 
       return true;
