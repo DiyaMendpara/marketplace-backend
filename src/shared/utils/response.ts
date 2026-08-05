@@ -1,6 +1,7 @@
 import { HttpException, HttpStatus } from '@nestjs/common';
+import { messages } from './messages';
 
-const sendBadRequest = (msg = 'Bad Request') => {
+const sendBadRequest = (msg = messages.shared.bad_request) => {
   throw new HttpException(
     {
       error: 'Bad Request',
@@ -11,7 +12,7 @@ const sendBadRequest = (msg = 'Bad Request') => {
 };
 
 const sendSuccess = (
-  msg = 'Success',
+  msg = messages.shared.success,
   data?: unknown,
   meta: Record<string, unknown> = {},
 ) => {
@@ -22,7 +23,7 @@ const sendSuccess = (
   };
 };
 
-const sendSystemError = (msg = 'System error.') => {
+const sendSystemError = (msg = messages.shared.system_error) => {
   throw new HttpException(
     {
       error: 'System error',
@@ -32,7 +33,7 @@ const sendSystemError = (msg = 'System error.') => {
   );
 };
 
-const sendUnauthorized = (msg = 'Unauthorized') => {
+const sendUnauthorized = (msg = messages.shared.unauthorized) => {
   throw new HttpException(
     {
       error: 'Unauthorized',
@@ -42,7 +43,7 @@ const sendUnauthorized = (msg = 'Unauthorized') => {
   );
 };
 
-const sendNotFound = (msg = 'Not Found') => {
+const sendNotFound = (msg = messages.shared.not_found) => {
   throw new HttpException(
     {
       error: 'Not Found',

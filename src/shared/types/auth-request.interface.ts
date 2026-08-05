@@ -1,3 +1,5 @@
+import type { UserRole } from '../../modules/user/model/user.model';
+
 export interface AuthRequest {
   headers: {
     authorization?: string;
@@ -8,6 +10,7 @@ export interface AuthRequest {
     _id: unknown;
     name: string;
     email: string;
-    role: string;
+    role: UserRole;
+    permissions?: string[];
   };
 }

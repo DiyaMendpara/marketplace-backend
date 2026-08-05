@@ -2,8 +2,11 @@ import { Module } from '@nestjs/common';
 import { ConfigModule, ConfigService } from '@nestjs/config';
 import { MongooseModule } from '@nestjs/mongoose';
 import { SharedModule } from './shared/shared.module';
+import { DatabaseModule } from './modules/database/database.module';
+import { RoleModule } from './modules/role/role.module';
 import { UserModule } from './modules/user/user.module';
 import { AuthModule } from './modules/auth/auth.module';
+import { ProductsModule } from './modules/products/products.module';
 
 @Module({
   imports: [
@@ -19,8 +22,11 @@ import { AuthModule } from './modules/auth/auth.module';
     }),
     // Feature modules
     SharedModule,
+    DatabaseModule,
+    RoleModule,
     UserModule,
     AuthModule,
+    ProductsModule,
     // products, orders, ... registered here as they're built.
   ],
 })
