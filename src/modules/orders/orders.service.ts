@@ -13,9 +13,8 @@ import { NotificationsService } from '../notifications/notifications.service';
 import { CreateOrderDto } from './dto/create-order.dto';
 
 function formatOrder(order: Record<string, any>) {
-  const obj = order._id ? { ...order, id: order._id.toString() } : { ...order };
-  delete obj._id;
-  return obj;
+  const { _id, ...rest } = order;
+  return _id ? { ...rest, id: _id.toString() } : rest;
 }
 
 @Injectable()
