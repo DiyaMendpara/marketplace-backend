@@ -5,9 +5,20 @@ import { ProductsService } from '../products/products.service';
 export class AssistantService {
   constructor(private readonly products: ProductsService) {}
   async chat(message: string) {
+    if (/^(hi|hello|hey|greetings|howdy)[\s\p{P}]*$/ui.test(message.trim())) {
+      return { reply: "Hey, how can I help you?", products: [] };
+    }
+
     const { data: all } = await this.products.findAll({});
     const catalog = all.map((p) => p.toObject());
-    const matches = catalog.filter((p) => `${p.name} ${p.category} ${p.description}`.toLowerCase().includes(message.toLowerCase().split(/\s+/).find((word) => word.length > 3) ?? '')).slice(0, 3);
+    
+    const stopWords = ['please', 'compare', 'and', 'the', 'with', 'show', 'me', 'between'];
+    const keywords = message.toLowerCase().split(/[\s,]+/).filter(w => w.length > 2 && !stopWords.includes(w));
+    
+    const matches = catalog.filter((p) => {
+      const searchStr = `${p.name} ${p.category} ${p.description}`.toLowerCase();
+      return keywords.some(kw => searchStr.includes(kw));
+    }).slice(0, 4);
     const key = process.env.HUGGINGFACE_API_KEY;
     const context = catalog.slice(0, 12).map((p) => `ID: ${p._id}, ${p.name}: ${p.category}, ₹${p.pricePerMeter}/m, ${p.description}`).join('\n');
 
@@ -56,8 +67,11 @@ ${context}`,
       }
     }
 
+    const isCompare = message.toLowerCase().includes("compare");
     const reply = matches.length
-      ? `I found ${matches.length} option${matches.length === 1 ? '' : 's'}. Compare them below:`
+      ? isCompare 
+        ? "Here is the comparison between the selected products. Check their specs below."
+        : `I found ${matches.length} option${matches.length === 1 ? '' : 's'}. Compare them below:`
       : 'Tell me the fabric type, intended use, and target price. I will narrow the catalog.';
     return { reply, products: matches };
   }
