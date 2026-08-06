@@ -1,6 +1,5 @@
 // Generates a professional invoice PDF as a Buffer.
-// eslint-disable-next-line @typescript-eslint/no-require-imports
-const PDFDocument = require('pdfkit');
+import PDFDocument from 'pdfkit';
 
 interface InvoiceItem {
   name: string;
