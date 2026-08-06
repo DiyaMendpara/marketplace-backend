@@ -63,13 +63,13 @@ export class OrdersController {
     @Res() res: Response,
   ) {
     const order = await this.orders.invoice(id, userId);
-    const pdf = invoicePdf(
-      order.reference,
-      order.total,
-      order.items.map(
-        (i) => `${i.name} - ${i.qty}m - INR ${i.subtotal.toFixed(2)}`,
-      ),
-    );
+    const pdf = await invoicePdf({
+      reference: order.reference,
+      total: order.total,
+      items: order.items,
+      shipping: order.shipping,
+      createdAt: (order as any).createdAt,
+    });
     res
       .set({
         'Content-Type': 'application/pdf',
