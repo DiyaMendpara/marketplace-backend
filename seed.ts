@@ -181,58 +181,7 @@ const mockProducts = [
 
 async function seed() {
   await mongoose.connect(MONGODB_URI);
-  console.log('Connected to MongoDB');
-
-  const Role = mongoose.models.Role || mongoose.model('Role', RoleSchema);
-  const User = mongoose.models.User || mongoose.model('User', UserSchema);
-  const Product = mongoose.models.Product || mongoose.model('Product', ProductSchema);
-
-  // 1. Get Roles
-  const supplierRole = await Role.findOne({ name: 'supplier' });
-  const buyerRole = await Role.findOne({ name: 'buyer' });
-
-  if (!supplierRole || !buyerRole) {
-    console.error('Roles not found! Run role seeder first or restart backend.');
-    process.exit(1);
-  }
-
-  const hashedPassword = await bcrypt.hash('password123', 10);
-
-  // 2. Seed Supplier
-  await User.findOneAndUpdate(
-    { email: 'diya.mendpara31@gmail.com' },
-    {
-      name: 'Diya Mendpara',
-      email: 'diya.mendpara31@gmail.com',
-      password: hashedPassword,
-      role: supplierRole._id,
-      companyName: 'Diya Mendpara',
-      status: 'active'
-    },
-    { upsert: true, new: true }
-  );
-  console.log('Supplier Diya seeded');
-
-  // 3. Seed Buyer
-  await User.findOneAndUpdate(
-    { email: 'prachetsamal@gmail.com' },
-    {
-      name: 'Prachet Samal',
-      email: 'prachetsamal@gmail.com',
-      password: hashedPassword,
-      role: buyerRole._id,
-      companyName: 'Prachet Buyer Co.',
-      status: 'active'
-    },
-    { upsert: true, new: true }
-  );
-  console.log('Buyer Prachet seeded');
-
-  // 4. Seed Products
-  await Product.deleteMany({});
-  await Product.insertMany(mockProducts);
-  console.log(`Seeded ${mockProducts.length} products by supplier Diya Mendpara`);
-
+  console.log('Connected to MongoDB — seed skipped (supplier/buyer/product seeding disabled)');
   await mongoose.disconnect();
 }
 

@@ -1,6 +1,6 @@
 import { Injectable } from '@nestjs/common';
 import { InjectModel } from '@nestjs/mongoose';
-import { Model } from 'mongoose';
+import { Model, Types } from 'mongoose';
 import { Product, ProductDocument } from './schemas/product.schema';
 import { CreateProductDto } from './dto/create-product.dto';
 import { UpdateProductDto } from './dto/update-product.dto';
@@ -36,7 +36,14 @@ export class ProductsService {
     }
 
     if (supplier) {
-      filter.supplier = supplier;
+      if (Types.ObjectId.isValid(supplier)) {
+        filter.$or = [
+          { supplier: new Types.ObjectId(supplier) },
+          { supplier: supplier },
+        ];
+      } else {
+        filter.supplier = supplier;
+      }
     }
 
     if (featured !== undefined) {
@@ -44,10 +51,17 @@ export class ProductsService {
     }
 
     if (search) {
-      filter.$or = [
+      const searchOr = [
         { name: { $regex: search, $options: 'i' } },
         { description: { $regex: search, $options: 'i' } },
       ];
+      if (filter.$or) {
+        const supplierOr = filter.$or;
+        delete filter.$or;
+        filter.$and = [{ $or: supplierOr }, { $or: searchOr }];
+      } else {
+        filter.$or = searchOr;
+      }
     }
 
     const skip = (page - 1) * limit;
