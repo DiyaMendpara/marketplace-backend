@@ -90,6 +90,14 @@ export class UserService {
 
   async setActive(id: string, active: boolean) {
     try {
+      const u = await this.userModel.findOne({ _id: id, is_deleted: false });
+      if (!u) return sendBadRequest(messages.user.user_not_found);
+      
+      const isSuperAdmin = u.email === (process.env.SUPER_ADMIN_EMAIL || 'admin@loomly.com');
+      if (isSuperAdmin && !active) {
+        return sendBadRequest("Cannot deactivate the system generated admin.");
+      }
+
       const user = await this.userModel
         .findOneAndUpdate(
           { _id: id, is_deleted: false },
@@ -107,6 +115,14 @@ export class UserService {
 
   async deleteUser(id: string) {
     try {
+      const u = await this.userModel.findOne({ _id: id, is_deleted: false });
+      if (!u) return sendBadRequest(messages.user.user_not_found);
+      
+      const isSuperAdmin = u.email === (process.env.SUPER_ADMIN_EMAIL || 'admin@loomly.com');
+      if (isSuperAdmin) {
+        return sendBadRequest("Cannot delete the system generated admin.");
+      }
+
       // Soft delete — never physically removed.
       const user = await this.userModel.findOneAndUpdate(
         { _id: id, is_deleted: false },
