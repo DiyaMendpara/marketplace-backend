@@ -1,7 +1,10 @@
 import mongoose from 'mongoose';
 import * as bcrypt from 'bcrypt';
 
-const MONGODB_URI = 'mongodb://127.0.0.1:27017/marketplace';
+import * as dotenv from 'dotenv';
+dotenv.config();
+
+const MONGODB_URI = process.env.MONGODB_URI || 'mongodb://127.0.0.1:27017/marketplace';
 
 const UserSchema = new mongoose.Schema({
   name: String,
