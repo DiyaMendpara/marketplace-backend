@@ -118,9 +118,9 @@ export class OrdersService {
     if (role === 'admin' || role === 'super admin') {
       query = this.orders.find();
     } else if (role === 'supplier') {
-      query = this.orders.find({ supplierIds: userId });
+      query = this.orders.find({ supplierIds: new Types.ObjectId(userId) });
     } else {
-      query = this.orders.find({ buyerId: userId });
+      query = this.orders.find({ buyerId: new Types.ObjectId(userId) });
     }
 
     const results = await query.sort({ createdAt: -1 }).lean();
