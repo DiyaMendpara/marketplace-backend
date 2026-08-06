@@ -5,7 +5,7 @@ import { ProductsService } from '../products/products.service';
 export class AssistantService {
   constructor(private readonly products: ProductsService) {}
   async chat(message: string) {
-    const all = await this.products.findAll();
+    const { data: all } = await this.products.findAll({});
     const catalog = all.map((p) => p.toObject());
     const matches = catalog.filter((p) => `${p.name} ${p.category} ${p.description}`.toLowerCase().includes(message.toLowerCase().split(/\s+/).find((word) => word.length > 3) ?? '')).slice(0, 3);
     const key = process.env.HUGGINGFACE_API_KEY;

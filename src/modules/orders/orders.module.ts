@@ -1,2 +1,24 @@
-import { Module } from '@nestjs/common'; import { MongooseModule } from '@nestjs/mongoose'; import { SharedModule } from '../../shared/shared.module'; import { NotificationsModule } from '../notifications/notifications.module'; import { Product, ProductSchema } from '../products/schemas/product.schema'; import { User, UserSchema } from '../user/model/user.model'; import { Order, OrderSchema } from './schemas/order.schema'; import { OrdersController } from './orders.controller'; import { OrdersService } from './orders.service';
-@Module({ imports:[MongooseModule.forFeature([{name:Order.name,schema:OrderSchema},{name:Product.name,schema:ProductSchema},{name:User.name,schema:UserSchema}]),NotificationsModule,SharedModule],controllers:[OrdersController],providers:[OrdersService] }) export class OrdersModule {}
+import { Module } from '@nestjs/common';
+import { MongooseModule } from '@nestjs/mongoose';
+import { SharedModule } from '../../shared/shared.module';
+import { NotificationsModule } from '../notifications/notifications.module';
+import { Product, ProductSchema } from '../products/schemas/product.schema';
+import { User, UserSchema } from '../user/model/user.model';
+import { Order, OrderSchema } from './schemas/order.schema';
+import { OrdersController } from './orders.controller';
+import { OrdersService } from './orders.service';
+
+@Module({
+  imports: [
+    MongooseModule.forFeature([
+      { name: Order.name, schema: OrderSchema },
+      { name: Product.name, schema: ProductSchema },
+      { name: User.name, schema: UserSchema },
+    ]),
+    NotificationsModule,
+    SharedModule,
+  ],
+  controllers: [OrdersController],
+  providers: [OrdersService],
+})
+export class OrdersModule {}
