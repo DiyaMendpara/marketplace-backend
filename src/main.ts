@@ -45,6 +45,6 @@ async function bootstrap() {
   SwaggerModule.setup('api-docs', app, document);
 
   // Render injects PORT; fall back to 4000 locally (Loadrive uses 3000).
-  await app.listen(process.env.PORT ?? 4000);
+  await app.listen(process.env.PORT ?? 3000);
 }
 void bootstrap();
