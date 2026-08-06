@@ -59,7 +59,7 @@ export class NotificationsGateway
     }
   }
 
-  sendToUser(userId: string, notification: any) {
+  sendToUser(userId: string, notification: unknown) {
     this.server.to(`user:${userId}`).emit('notification', notification);
   }
 }

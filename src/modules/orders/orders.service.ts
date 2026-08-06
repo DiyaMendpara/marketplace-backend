@@ -12,9 +12,9 @@ import { User, UserDocument } from '../user/model/user.model';
 import { NotificationsService } from '../notifications/notifications.service';
 import { CreateOrderDto } from './dto/create-order.dto';
 
-function formatOrder(order: Record<string, any>) {
+function formatOrder<T extends { _id?: unknown }>(order: T) {
   const { _id, ...rest } = order;
-  return _id ? { ...rest, id: _id.toString() } : rest;
+  return _id ? { ...rest, id: String(_id) } : rest;
 }
 
 @Injectable()

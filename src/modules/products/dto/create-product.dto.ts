@@ -40,8 +40,9 @@ export class CreateProductDto {
   swatch: string;
 
   @IsOptional()
-  @IsString()
-  image?: string;
+  @IsArray()
+  @IsString({ each: true })
+  images?: string[];
 
   @IsOptional()
   @IsBoolean()

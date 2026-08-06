@@ -32,8 +32,8 @@ export class Product {
   @Prop({ required: true })
   swatch: string;
 
-  @Prop()
-  image?: string;
+  @Prop({ type: [String], default: [] })
+  images?: string[];
 
   @Prop({ type: Types.ObjectId, ref: 'User', required: true })
   supplier: Types.ObjectId;

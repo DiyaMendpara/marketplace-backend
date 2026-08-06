@@ -68,7 +68,7 @@ export class OrdersController {
       total: order.total,
       items: order.items,
       shipping: order.shipping,
-      createdAt: (order as any).createdAt,
+      createdAt: (order as unknown as { createdAt: Date }).createdAt,
     });
     res
       .set({

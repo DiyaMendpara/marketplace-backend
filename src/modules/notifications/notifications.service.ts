@@ -30,7 +30,7 @@ export class NotificationsService {
       body,
       link,
       read: false,
-      createdAt: (notification as any).createdAt,
+      createdAt: (notification as unknown as { createdAt: Date }).createdAt,
     });
 
     return notification;

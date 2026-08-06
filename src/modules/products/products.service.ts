@@ -25,7 +25,7 @@ export class ProductsService {
       limit = 20,
     } = query;
 
-    const filter: Record<string, any> = { is_deleted: { $ne: true } };
+    const filter: Record<string, unknown> = { is_deleted: { $ne: true } };
 
     if (category) {
       filter.category = category;

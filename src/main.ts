@@ -2,9 +2,20 @@ import { ValidationPipe } from '@nestjs/common';
 import { NestFactory } from '@nestjs/core';
 import { DocumentBuilder, SwaggerModule } from '@nestjs/swagger';
 import { AppModule } from './app.module';
+import { json, urlencoded } from 'express';
 
 async function bootstrap() {
-  const app = await NestFactory.create(AppModule);
+  const app = await NestFactory.create(AppModule, { bodyParser: false });
+
+  // Register parsers before Nest's request pipeline so large product image
+  // payloads are accepted instead of being rejected by Express' default limit.
+  app.use(json({ limit: process.env.JSON_BODY_LIMIT ?? '50mb' }));
+  app.use(
+    urlencoded({
+      extended: true,
+      limit: process.env.JSON_BODY_LIMIT ?? '50mb',
+    }),
+  );
 
   // Validate & strip DTOs globally (matches Loadrive's pipe config).
   app.useGlobalPipes(
