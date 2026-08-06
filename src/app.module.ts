@@ -10,6 +10,7 @@ import { ProductsModule } from './modules/products/products.module';
 import { AssistantModule } from './modules/assistant/assistant.module';
 import { NotificationsModule } from './modules/notifications/notifications.module';
 import { OrdersModule } from './modules/orders/orders.module';
+import { ReviewsModule } from './modules/reviews/reviews.module';
 
 @Module({
   imports: [
@@ -33,6 +34,7 @@ import { OrdersModule } from './modules/orders/orders.module';
     AssistantModule,
     NotificationsModule,
     OrdersModule,
+    ReviewsModule,
     // products, orders, ... registered here as they're built.
   ],
 })

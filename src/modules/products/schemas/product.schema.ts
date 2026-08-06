@@ -43,6 +43,12 @@ export class Product {
 
   @Prop({ default: false })
   is_deleted: boolean;
+
+  @Prop({ default: 0 })
+  averageRating: number;
+
+  @Prop({ default: 0 })
+  reviewCount: number;
 }
 
 export const ProductSchema = SchemaFactory.createForClass(Product);
