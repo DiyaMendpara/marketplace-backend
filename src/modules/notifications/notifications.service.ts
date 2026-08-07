@@ -37,21 +37,21 @@ export class NotificationsService {
       createdAt: (notification as unknown as { createdAt: Date }).createdAt,
     });
 
-    // Send email notification asynchronously if user has enabled email notifications
-    this.userService
-      .findById(userId.toString())
-      .then((user) => {
-        if (user && user.email && user.emailNotifications !== false) {
-          this.emailService.sendNotificationEmail(
-            user.email,
-            user.name || 'User',
-            title,
-            body,
-            link,
-          );
-        }
-      })
-      .catch(() => {});
+    // Send email notification if user has enabled email notifications
+    try {
+      const user = await this.userService.findById(userId.toString());
+      if (user && user.email && user.emailNotifications !== false) {
+        await this.emailService.sendNotificationEmail(
+          user.email,
+          user.name || 'User',
+          title,
+          body,
+          link,
+        );
+      }
+    } catch (err) {
+      // Ignore background notification user lookup failure
+    }
 
     return notification;
   }

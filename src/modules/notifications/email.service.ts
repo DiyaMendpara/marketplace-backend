@@ -77,8 +77,11 @@ export class EmailService {
         to: [{ email: toEmail, name: toName }],
       });
       this.logger.log(`Notification email sent to ${toEmail}`);
-    } catch (error) {
-      this.logger.error(`Failed to send email to ${toEmail}:`, error);
+    } catch (error: any) {
+      this.logger.error(
+        `Failed to send email to ${toEmail}: ${error?.message || error}`,
+        error?.response?.body ? JSON.stringify(error.response.body) : error?.stack,
+      );
     }
   }
 }
