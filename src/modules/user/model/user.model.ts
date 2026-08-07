@@ -57,6 +57,12 @@ export class User {
   @Prop({ default: false })
   isSystemGenerated: boolean;
 
+  @Prop({ trim: true, select: false })
+  resetOtp?: string;
+
+  @Prop({ type: Date, select: false })
+  resetOtpExpires?: Date;
+
   @Prop({ trim: true })
   @ApiProperty({ type: String, required: false, example: 'Nova Apparel Ltd.' })
   companyName?: string;

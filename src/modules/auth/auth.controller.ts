@@ -16,6 +16,8 @@ import { UpdateProfileDTO } from './dto/update-profile.dto';
 import { ChangePasswordDTO } from './dto/change-password.dto';
 import { SavePreferencesDTO } from './dto/save-preferences.dto';
 import { GoogleAuthDTO } from './dto/google-auth.dto';
+import { ForgotPasswordDTO } from './dto/forgot-password.dto';
+import { ResetPasswordDTO } from './dto/reset-password.dto';
 
 @Controller('auth')
 @ApiTags('Auth')
@@ -85,5 +87,19 @@ export class AuthController {
     @Body() body: SavePreferencesDTO,
   ) {
     return await this.authService.savePreferences(user_id, body);
+  }
+
+  @Post('forgot-password')
+  @ApiOkResponse({ description: messages.auth.forgot_password_sent })
+  @ApiBody({ type: ForgotPasswordDTO })
+  async forgotPassword(@Body() body: ForgotPasswordDTO) {
+    return await this.authService.forgotPassword(body);
+  }
+
+  @Post('reset-password')
+  @ApiOkResponse({ description: messages.auth.password_reset_success })
+  @ApiBody({ type: ResetPasswordDTO })
+  async resetPassword(@Body() body: ResetPasswordDTO) {
+    return await this.authService.resetPassword(body);
   }
 }

@@ -13,12 +13,15 @@ import {
 } from '../../shared/utils/response';
 import { User, UserDocument } from '../user/model/user.model';
 import { Role, RoleDocument } from '../role/model/role.model';
+import { EmailService } from '../notifications/email.service';
 import { LoginDTO } from './dto/login.dto';
 import { RegisterDTO } from './dto/register.dto';
 import { UpdateProfileDTO } from './dto/update-profile.dto';
 import { ChangePasswordDTO } from './dto/change-password.dto';
 import { SavePreferencesDTO } from './dto/save-preferences.dto';
 import { GoogleAuthDTO } from './dto/google-auth.dto';
+import { ForgotPasswordDTO } from './dto/forgot-password.dto';
+import { ResetPasswordDTO } from './dto/reset-password.dto';
 
 @Injectable()
 export class AuthService {
@@ -30,6 +33,7 @@ export class AuthService {
     @InjectModel(User.name) private userModel: Model<UserDocument>,
     @InjectModel(Role.name) private roleModel: Model<RoleDocument>,
     private readonly jwtService: JwtService,
+    private readonly emailService: EmailService,
   ) {}
 
   async googleAuth(body: GoogleAuthDTO) {
@@ -251,6 +255,71 @@ export class AuthService {
         return sendBadRequest(messages.user.user_not_found);
       }
       return sendSuccess(messages.user.profile_updated, this.toPublic(user));
+    } catch (err: unknown) {
+      if (err instanceof HttpException) {
+        throw err;
+      }
+      return sendSystemError(messages.shared.system_error);
+    }
+  }
+
+  async forgotPassword(body: ForgotPasswordDTO) {
+    try {
+      const email = body.email ? body.email.trim().toLowerCase() : '';
+      const user = await this.userModel.findOne({ email });
+
+      // Always return success message to prevent email enumeration
+      if (!user) {
+        return sendSuccess(messages.auth.forgot_password_sent, {});
+      }
+
+      // Generate 6-digit OTP
+      const otp = Math.floor(100000 + Math.random() * 900000).toString();
+      const expires = new Date(Date.now() + 15 * 60 * 1000); // 15 minutes
+
+      user.resetOtp = otp;
+      user.resetOtpExpires = expires;
+      await user.save();
+
+      // Send email
+      await this.emailService.sendNotificationEmail(
+        user.email,
+        user.name || 'User',
+        'Password Reset Code',
+        `Your password reset code is ${otp}. This code is valid for 15 minutes.`,
+      );
+
+      return sendSuccess(messages.auth.forgot_password_sent, {});
+    } catch (err: unknown) {
+      if (err instanceof HttpException) {
+        throw err;
+      }
+      return sendSystemError(messages.shared.system_error);
+    }
+  }
+
+  async resetPassword(body: ResetPasswordDTO) {
+    try {
+      const email = body.email ? body.email.trim().toLowerCase() : '';
+      const user = await this.userModel
+        .findOne({ email })
+        .select('+resetOtp +resetOtpExpires');
+
+      if (!user || !user.resetOtp || !user.resetOtpExpires) {
+        return sendBadRequest(messages.auth.invalid_otp);
+      }
+
+      if (user.resetOtp !== body.otp.trim() || user.resetOtpExpires < new Date()) {
+        return sendBadRequest(messages.auth.invalid_otp);
+      }
+
+      const saltRounds = parseInt(process.env.SALT_ROUNDS || '10', 10);
+      user.password = await bcrypt.hash(body.newPassword, saltRounds);
+      user.resetOtp = undefined;
+      user.resetOtpExpires = undefined;
+      await user.save();
+
+      return sendSuccess(messages.auth.password_reset_success, {});
     } catch (err: unknown) {
       if (err instanceof HttpException) {
         throw err;

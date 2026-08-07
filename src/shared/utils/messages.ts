@@ -21,6 +21,9 @@ export const messages = {
     password_changed: 'Password changed successfully',
     account_deactivated: 'Your account has been deactivated. Please contact an administrator.',
     google_failed: 'Google sign-in failed. Please try again.',
+    forgot_password_sent: 'Password reset code has been sent to your email',
+    invalid_otp: 'Invalid or expired reset code (OTP)',
+    password_reset_success: 'Password reset successfully. Please log in with your new password.',
   },
 
   user: {

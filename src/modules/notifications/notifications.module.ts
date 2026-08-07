@@ -10,10 +10,15 @@ import { NotificationsService } from './notifications.service';
 import { EmailService } from './email.service';
 import { UserModule } from '../user/user.module';
 
+import { User, UserSchema } from '../user/model/user.model';
+import { Role, RoleSchema } from '../role/model/role.model';
+
 @Module({
   imports: [
     MongooseModule.forFeature([
       { name: Notification.name, schema: NotificationSchema },
+      { name: User.name, schema: UserSchema },
+      { name: Role.name, schema: RoleSchema },
     ]),
     UserModule,
   ],

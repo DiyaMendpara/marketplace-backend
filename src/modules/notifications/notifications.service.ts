@@ -8,22 +8,40 @@ import {
 import { NotificationsGateway } from './notifications.gateway';
 import { EmailService } from './email.service';
 import { UserService } from '../user/user.service';
+import { User, UserDocument } from '../user/model/user.model';
+import { Role, RoleDocument } from '../role/model/role.model';
 
 @Injectable()
 export class NotificationsService {
   constructor(
     @InjectModel(Notification.name)
     private readonly model: Model<NotificationDocument>,
+    @InjectModel(User.name)
+    private readonly userModel: Model<UserDocument>,
+    @InjectModel(Role.name)
+    private readonly roleModel: Model<RoleDocument>,
     private readonly gateway: NotificationsGateway,
     private readonly emailService: EmailService,
     private readonly userService: UserService,
   ) {}
+
+  private async isUserAdmin(userId: string): Promise<boolean> {
+    try {
+      const user = await this.userModel.findById(userId).populate('role').exec();
+      if (!user || !user.role) return false;
+      const role = user.role as unknown as { name?: string };
+      return role?.name === 'admin' || role?.name === 'super admin';
+    } catch {
+      return false;
+    }
+  }
 
   async create(
     userId: Types.ObjectId,
     title: string,
     body: string,
     link?: string,
+    isForAdminCopy = false,
   ) {
     const notification = await this.model.create({ userId, title, body, link });
 
@@ -53,6 +71,39 @@ export class NotificationsService {
       // Ignore background notification user lookup failure
     }
 
+    // Forward notification to all admins & super admins if target user is buyer or supplier
+    if (!isForAdminCopy) {
+      try {
+        const isAdmin = await this.isUserAdmin(userId.toString());
+        if (!isAdmin) {
+          const adminRoles = await this.roleModel.find({
+            name: { $in: ['admin', 'super admin'] },
+            is_deleted: false,
+          }).exec();
+
+          const adminRoleIds = adminRoles.map((r) => r._id);
+          const adminUsers = await this.userModel.find({
+            role: { $in: adminRoleIds },
+            is_deleted: false,
+            is_disabled: false,
+            _id: { $ne: userId },
+          }).exec();
+
+          for (const adminUser of adminUsers) {
+            await this.create(
+              adminUser._id as unknown as Types.ObjectId,
+              title,
+              body,
+              link,
+              true, // isForAdminCopy flag to avoid recursion
+            );
+          }
+        }
+      } catch (e) {
+        // Ignore forwarding failure
+      }
+    }
+
     return notification;
   }
 
@@ -72,6 +123,15 @@ export class NotificationsService {
   }
 
   async list(userId: string) {
+    const isAdmin = await this.isUserAdmin(userId);
+    if (isAdmin) {
+      return this.model
+        .find({})
+        .sort({ createdAt: -1 })
+        .limit(100)
+        .lean();
+    }
+
     return this.model
       .find({ userId })
       .sort({ createdAt: -1 })
@@ -80,9 +140,12 @@ export class NotificationsService {
   }
 
   async read(id: string, userId: string) {
+    const isAdmin = await this.isUserAdmin(userId);
+    const filter = isAdmin ? { _id: id } : { _id: id, userId };
+
     return this.model
       .findOneAndUpdate(
-        { _id: id, userId },
+        filter,
         { read: true },
         { new: true },
       )
@@ -90,26 +153,29 @@ export class NotificationsService {
   }
 
   async markAllRead(userId: string) {
+    const isAdmin = await this.isUserAdmin(userId);
+    const filter = isAdmin ? { read: false } : { userId, read: false };
+
     await this.model.updateMany(
-      { userId, read: false },
+      filter,
       { read: true },
     );
     return { success: true };
   }
 
   async unreadCount(userId: string): Promise<{ count: number }> {
-    const count = await this.model.countDocuments({
-      userId,
-      read: false,
-    });
+    const isAdmin = await this.isUserAdmin(userId);
+    const filter = isAdmin ? { read: false } : { userId, read: false };
+
+    const count = await this.model.countDocuments(filter);
     return { count };
   }
 
   async delete(id: string, userId: string) {
-    const result = await this.model.findOneAndDelete({
-      _id: id,
-      userId,
-    });
+    const isAdmin = await this.isUserAdmin(userId);
+    const filter = isAdmin ? { _id: id } : { _id: id, userId };
+
+    const result = await this.model.findOneAndDelete(filter);
 
     if (!result) {
       throw new NotFoundException('Notification not found');
