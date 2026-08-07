@@ -14,7 +14,7 @@ export class Product {
   @Prop({ required: true })
   fabricType: string;
 
-  @Prop({ required: true })
+  @Prop({ default: '' })
   description: string;
 
   @Prop({ required: true })
