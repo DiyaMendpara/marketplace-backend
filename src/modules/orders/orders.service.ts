@@ -156,7 +156,10 @@ export class OrdersService {
       throw new NotFoundException('Order not found');
     }
 
-    if (!order.supplierIds.some((v) => v.toString() === supplierId)) {
+    const isSupplierOfOrder = Array.isArray(order.supplierIds) && order.supplierIds.some(
+      (v) => v && String(v) === String(supplierId)
+    );
+    if (!isSupplierOfOrder) {
       throw new ForbiddenException();
     }
 
@@ -184,7 +187,7 @@ export class OrdersService {
       throw new NotFoundException('Order not found');
     }
 
-    if (order.buyerId.toString() !== buyerId) {
+    if (order.buyerId && String(order.buyerId) !== String(buyerId)) {
       throw new ForbiddenException();
     }
 
@@ -228,10 +231,12 @@ export class OrdersService {
       throw new NotFoundException('Order not found');
     }
 
-    if (
-      order.buyerId.toString() !== userId &&
-      !order.supplierIds.some((v) => v.toString() === userId)
-    ) {
+    const isBuyer = order.buyerId && String(order.buyerId) === String(userId);
+    const isSupplier = Array.isArray(order.supplierIds) && order.supplierIds.some(
+      (v) => v && String(v) === String(userId)
+    );
+
+    if (!isBuyer && !isSupplier) {
       throw new ForbiddenException();
     }
 
