@@ -42,6 +42,7 @@ export class UserService {
       role: role?.name,
       permissions: role?.permissions ?? [],
       status: user.status,
+      emailNotifications: user.emailNotifications ?? true,
       companyName: user.companyName,
       phone: user.phone,
       photo: user.photo,
@@ -130,6 +131,23 @@ export class UserService {
       );
       if (!user) return sendBadRequest(messages.user.user_not_found);
       return sendSuccess(messages.user.user_deleted, {});
+    } catch (err: unknown) {
+      if (err instanceof HttpException) throw err;
+      return sendSystemError(messages.shared.system_error);
+    }
+  }
+
+  async updateNotificationSettings(id: string, emailNotifications: boolean) {
+    try {
+      const user = await this.userModel
+        .findOneAndUpdate(
+          { _id: id, is_deleted: false },
+          { $set: { emailNotifications } },
+          { new: true },
+        )
+        .populate('role');
+      if (!user) return sendBadRequest(messages.user.user_not_found);
+      return sendSuccess('Notification preferences updated', this.toPublic(user));
     } catch (err: unknown) {
       if (err instanceof HttpException) throw err;
       return sendSystemError(messages.shared.system_error);

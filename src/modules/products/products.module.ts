@@ -4,11 +4,13 @@ import { SharedModule } from '../../shared/shared.module';
 import { ProductsController } from './products.controller';
 import { ProductsService } from './products.service';
 import { Product, ProductSchema } from './schemas/product.schema';
+import { NotificationsModule } from '../notifications/notifications.module';
 
 @Module({
   imports: [
     MongooseModule.forFeature([{ name: Product.name, schema: ProductSchema }]),
     SharedModule,
+    NotificationsModule,
   ],
   controllers: [ProductsController],
   providers: [ProductsService],

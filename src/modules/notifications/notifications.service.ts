@@ -6,6 +6,8 @@ import {
   NotificationDocument,
 } from './schemas/notification.schema';
 import { NotificationsGateway } from './notifications.gateway';
+import { EmailService } from './email.service';
+import { UserService } from '../user/user.service';
 
 @Injectable()
 export class NotificationsService {
@@ -13,6 +15,8 @@ export class NotificationsService {
     @InjectModel(Notification.name)
     private readonly model: Model<NotificationDocument>,
     private readonly gateway: NotificationsGateway,
+    private readonly emailService: EmailService,
+    private readonly userService: UserService,
   ) {}
 
   async create(
@@ -33,7 +37,38 @@ export class NotificationsService {
       createdAt: (notification as unknown as { createdAt: Date }).createdAt,
     });
 
+    // Send email notification asynchronously if user has enabled email notifications
+    this.userService
+      .findById(userId.toString())
+      .then((user) => {
+        if (user && user.email && user.emailNotifications !== false) {
+          this.emailService.sendNotificationEmail(
+            user.email,
+            user.name || 'User',
+            title,
+            body,
+            link,
+          );
+        }
+      })
+      .catch(() => {});
+
     return notification;
+  }
+
+  async notifySubscribedBuyers(title: string, body: string, link?: string) {
+    try {
+      const result = await this.userService.getAllUsers({ role: 'buyer' });
+      if (result && result.data && Array.isArray(result.data)) {
+        for (const buyer of result.data) {
+          if (buyer._id) {
+            await this.create(buyer._id as unknown as Types.ObjectId, title, body, link);
+          }
+        }
+      }
+    } catch (e) {
+      // Ignore background notification failure
+    }
   }
 
   async list(userId: string) {

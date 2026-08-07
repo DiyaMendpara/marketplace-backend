@@ -5,11 +5,13 @@ import { Product, ProductDocument } from './schemas/product.schema';
 import { CreateProductDto } from './dto/create-product.dto';
 import { UpdateProductDto } from './dto/update-product.dto';
 import { QueryProductsDto } from './dto/query-products.dto';
+import { NotificationsService } from '../notifications/notifications.service';
 
 @Injectable()
 export class ProductsService {
   constructor(
     @InjectModel(Product.name) private productModel: Model<ProductDocument>,
+    private readonly notificationsService: NotificationsService,
   ) {}
 
   async findAll(
@@ -88,16 +90,38 @@ export class ProductsService {
     dto: CreateProductDto,
     supplierId: string,
   ): Promise<ProductDocument> {
-    return this.productModel.create({ ...dto, supplier: supplierId });
+    const product = await this.productModel.create({ ...dto, supplier: supplierId });
+
+    // Notify subscribed buyers of the new fabric
+    this.notificationsService.notifySubscribedBuyers(
+      `New Fabric: ${product.name}`,
+      `A new ${product.fabricType} fabric (${product.name}) has been listed in ${product.category}.`,
+      `/product/${product._id}`,
+    ).catch(() => {});
+
+    return product;
   }
 
   async update(
     id: string,
     dto: UpdateProductDto,
   ): Promise<ProductDocument | null> {
-    return this.productModel
+    const existing = await this.productModel.findById(id).exec();
+
+    const updated = await this.productModel
       .findByIdAndUpdate(id, dto, { new: true })
       .exec();
+
+    if (existing && updated && existing.stock === 0 && updated.stock > 0) {
+      // Restock trigger: product was out of stock and is now available!
+      this.notificationsService.notifySubscribedBuyers(
+        `Back in Stock: ${updated.name}`,
+        `${updated.name} is back in stock with ${updated.stock}m available!`,
+        `/product/${updated._id}`,
+      ).catch(() => {});
+    }
+
+    return updated;
   }
 
   async remove(id: string): Promise<ProductDocument | null> {

@@ -41,6 +41,10 @@ export class User {
   @ApiProperty({ enum: ['active', 'inactive'], default: 'active' })
   status: UserStatus;
 
+  @Prop({ default: true })
+  @ApiProperty({ type: Boolean, default: true })
+  emailNotifications: boolean;
+
   @Prop({ default: false })
   is_disabled: boolean;
 

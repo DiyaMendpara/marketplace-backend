@@ -62,4 +62,16 @@ export class UserController {
   async deleteUser(@Param('id') id: string) {
     return await this.userService.deleteUser(id);
   }
+
+  @Put('notifications-settings')
+  @ApiOkResponse({ description: 'Notification settings updated' })
+  async updateNotificationSettings(
+    @Query('userId') userId: string,
+    @Body() body: { emailNotifications: boolean },
+  ) {
+    return await this.userService.updateNotificationSettings(
+      userId,
+      body.emailNotifications,
+    );
+  }
 }
