@@ -36,6 +36,7 @@ export class OrdersService {
 
     const sanitizedInputItems = input.items.map((i) => ({
       ...i,
+      originalProductId: i.productId,
       productId: i.productId.replace(/__color_\d+$/, ''),
     }));
 
@@ -62,9 +63,15 @@ export class OrdersService {
       const supplierUser = supplierUsers.find((u) => String(u._id) === String(product.supplier));
       const supplierName = supplierUser?.companyName || supplierUser?.name || product.supplier?.toString() || '';
 
+      let finalName = product.name;
+      const colorMatch = line.originalProductId.match(/__color_(\d+)$/);
+      if (colorMatch && product.colors && product.colors[parseInt(colorMatch[1], 10)]) {
+        finalName = `${product.name} - ${product.colors[parseInt(colorMatch[1], 10)].name}`;
+      }
+
       return {
         productId: product._id,
-        name: product.name,
+        name: finalName,
         supplier: supplierName,
         qty: line.qty,
         unitPrice: product.pricePerMeter,
