@@ -60,6 +60,7 @@ export class OrdersController {
   async invoice(
     @Param('id') id: string,
     @UserId() userId: string,
+    @Req() req: AuthRequest,
     @Res() res: Response,
   ) {
     const order = await this.orders.invoice(id, userId);
@@ -69,6 +70,7 @@ export class OrdersController {
       items: order.items,
       shipping: order.shipping,
       createdAt: (order as unknown as { createdAt: Date }).createdAt,
+      role: req.user?.role ?? 'buyer',
     });
     res
       .set({

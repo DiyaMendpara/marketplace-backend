@@ -15,6 +15,7 @@ interface InvoiceData {
   items: InvoiceItem[];
   shipping?: Record<string, string>;
   createdAt?: Date | string;
+  role?: string;
 }
 
 export function invoicePdf(data: InvoiceData): Promise<Buffer> {
@@ -118,8 +119,14 @@ export function invoicePdf(data: InvoiceData): Promise<Buffer> {
       currentY += 10;
     }
 
-    // ── Table header ──
-    const colX = {
+    const isBuyer = data.role === 'buyer';
+
+    const colX = isBuyer ? {
+      item: marginLeft,
+      qty: marginLeft + contentWidth * 0.58,
+      rate: marginLeft + contentWidth * 0.72,
+      amount: marginLeft + contentWidth * 0.86,
+    } : {
       item: marginLeft,
       supplier: marginLeft + contentWidth * 0.35,
       qty: marginLeft + contentWidth * 0.58,
@@ -133,7 +140,9 @@ export function invoicePdf(data: InvoiceData): Promise<Buffer> {
     currentY += 7;
     doc.fontSize(8).font('Helvetica-Bold').fillColor('#374151');
     doc.text('ITEM', colX.item + 8, currentY);
-    doc.text('SUPPLIER', colX.supplier, currentY);
+    if (!isBuyer) {
+      doc.text('SUPPLIER', (colX as any).supplier, currentY);
+    }
     doc.text('QTY (m)', colX.qty, currentY);
     doc.text('RATE', colX.rate, currentY);
     doc.text('AMOUNT', colX.amount, currentY);
@@ -145,11 +154,13 @@ export function invoicePdf(data: InvoiceData): Promise<Buffer> {
 
     for (const item of data.items) {
       currentY += 4;
-      doc.text(item.name, colX.item + 8, currentY, { width: contentWidth * 0.32 });
-      doc.text(item.supplier, colX.supplier, currentY, { width: contentWidth * 0.2 });
+      doc.text(item.name, colX.item + 8, currentY, { width: isBuyer ? contentWidth * 0.52 : contentWidth * 0.32 });
+      if (!isBuyer) {
+        doc.text(item.supplier, (colX as any).supplier, currentY, { width: contentWidth * 0.2 });
+      }
       doc.text(String(item.qty), colX.qty, currentY);
-      doc.text(`₹${item.unitPrice.toFixed(2)}`, colX.rate, currentY);
-      doc.text(`₹${item.subtotal.toLocaleString('en-IN', { minimumFractionDigits: 2 })}`, colX.amount, currentY);
+      doc.text(`Rs. ${item.unitPrice.toFixed(2)}`, colX.rate, currentY);
+      doc.text(`Rs. ${item.subtotal.toLocaleString('en-IN', { minimumFractionDigits: 2 })}`, colX.amount, currentY);
 
       currentY += 16;
 
@@ -178,7 +189,7 @@ export function invoicePdf(data: InvoiceData): Promise<Buffer> {
       .fillColor('#111827')
       .text('TOTAL', colX.rate, currentY)
       .text(
-        `₹${data.total.toLocaleString('en-IN', { minimumFractionDigits: 2 })}`,
+        `Rs. ${data.total.toLocaleString('en-IN', { minimumFractionDigits: 2 })}`,
         colX.amount,
         currentY,
       );

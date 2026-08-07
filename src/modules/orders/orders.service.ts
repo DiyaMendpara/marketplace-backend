@@ -41,6 +41,10 @@ export class OrdersService {
       throw new BadRequestException('A product is unavailable');
     }
 
+    // Fetch supplier info to resolve companyName
+    const supplierUserIds = [...new Set(found.map((p) => p.supplier?.toString()).filter(Boolean))];
+    const supplierUsers = await this.users.find({ _id: { $in: supplierUserIds } }).lean();
+
     const items = input.items.map((line) => {
       const product = found.find((p) => p.id === line.productId)!;
 
@@ -50,10 +54,13 @@ export class OrdersService {
         );
       }
 
+      const supplierUser = supplierUsers.find((u) => String(u._id) === String(product.supplier));
+      const supplierName = supplierUser?.companyName || supplierUser?.name || product.supplier?.toString() || '';
+
       return {
         productId: product._id,
         name: product.name,
-        supplier: product.supplier?.toString() ?? '',
+        supplier: supplierName,
         qty: line.qty,
         unitPrice: product.pricePerMeter,
         subtotal: product.pricePerMeter * line.qty,
