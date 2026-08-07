@@ -62,11 +62,12 @@ export class JwtAuthGuard extends AuthGuard('jwt') {
       }
 
       // Resolve the role -> name + permissions. A missing or legacy (string)
-      // role must NOT fail auth — the user stays logged in with no permissions.
+      let roleName: string | null = typeof user.role === 'string' && !isValidObjectId(user.role) ? user.role : null;
       let roleDoc: RoleDocument | null = null;
       if (user.role && isValidObjectId(user.role)) {
         try {
           roleDoc = await this.roleModel.findById(user.role).lean();
+          if (roleDoc) roleName = roleDoc.name;
         } catch {
           roleDoc = null;
         }
@@ -76,7 +77,7 @@ export class JwtAuthGuard extends AuthGuard('jwt') {
         _id: user._id,
         name: user.name,
         email: user.email,
-        role: roleDoc?.name as unknown as UserRole,
+        role: (roleName ?? 'buyer') as UserRole,
         permissions: roleDoc?.permissions ?? [],
       };
 

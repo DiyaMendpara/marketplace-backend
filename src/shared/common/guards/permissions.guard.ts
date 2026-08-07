@@ -29,6 +29,11 @@ export class PermissionsGuard implements CanActivate {
     const req = context.switchToHttp().getRequest<AuthRequest>();
     const user = req.user;
 
+    // Super Admin and Admin roles hold full system access
+    if (user?.role === 'super admin' || user?.role === 'admin') {
+      return true;
+    }
+
     if (!user || !user.permissions) {
       throw new HttpException(
         { error: 'NO_PERMISSIONS', message: messages.auth.permissions_not_found },

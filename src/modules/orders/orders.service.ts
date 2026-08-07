@@ -136,9 +136,9 @@ export class OrdersService {
 
     // Admin / super admin can see any order
     if (role !== 'admin' && role !== 'super admin') {
-      const isBuyer = order.buyerId.toString() === userId;
-      const isSupplier = order.supplierIds.some(
-        (v) => v.toString() === userId,
+      const isBuyer = order.buyerId && String(order.buyerId) === String(userId);
+      const isSupplier = Array.isArray(order.supplierIds) && order.supplierIds.some(
+        (v) => v && String(v) === String(userId),
       );
 
       if (!isBuyer && !isSupplier) {
