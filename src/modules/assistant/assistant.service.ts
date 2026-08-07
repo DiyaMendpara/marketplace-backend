@@ -24,18 +24,22 @@ export class AssistantService {
 
     if (key) {
       try {
+        const controller = new AbortController();
+        const timeoutId = setTimeout(() => controller.abort(), 4000);
+
         const response = await fetch('https://router.huggingface.co/v1/chat/completions', {
           method: 'POST',
           headers: { Authorization: `Bearer ${key}`, 'Content-Type': 'application/json' },
+          signal: controller.signal,
           body: JSON.stringify({
             model: process.env.HUGGINGFACE_MODEL ?? 'meta-llama/Llama-3.1-8B-Instruct:featherless-ai',
             messages: [
               {
                 role: 'system',
-                content: `You are a B2B textile sourcing assistant. You MUST respond ONLY in valid JSON format. Do not include markdown code blocks, just raw JSON.
+                content: `You are a B2B textile sourcing assistant. Respond ONLY in valid JSON. No markdown code blocks.
 Format:
 {
-  "reply": "Your short conversational message without listing products.",
+  "reply": "Your short conversational message.",
   "productIds": ["ID1", "ID2"]
 }
 
@@ -44,10 +48,12 @@ ${context}`,
               },
               { role: 'user', content: message },
             ],
-            max_tokens: 240,
+            max_tokens: 150,
             temperature: 0.1,
           }),
         });
+
+        clearTimeout(timeoutId);
 
         const result = (await response.json()) as { choices?: { message?: { content?: string } }[] };
         const rawContent = result.choices?.[0]?.message?.content?.trim() || '{}';
