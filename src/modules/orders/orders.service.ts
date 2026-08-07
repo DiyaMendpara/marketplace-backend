@@ -40,10 +40,11 @@ export class OrdersService {
       productId: i.productId.replace(/__color_\d+$/, ''),
     }));
 
-    const productIds = sanitizedInputItems.map((i) => i.productId);
-    const found = await this.products.find({ _id: { $in: productIds } });
+    // Deduplicate base product IDs for the DB query
+    const uniqueProductIds = [...new Set(sanitizedInputItems.map((i) => i.productId))];
+    const found = await this.products.find({ _id: { $in: uniqueProductIds } });
 
-    if (found.length !== productIds.length) {
+    if (found.length !== uniqueProductIds.length) {
       throw new BadRequestException('A product is unavailable');
     }
 
@@ -51,12 +52,26 @@ export class OrdersService {
     const supplierUserIds = [...new Set(found.map((p) => p.supplier?.toString()).filter(Boolean))];
     const supplierUsers = await this.users.find({ _id: { $in: supplierUserIds } }).lean();
 
+    // Validate total qty per base product does not exceed stock
+    const qtyByBaseProduct: Record<string, number> = {};
+    for (const line of sanitizedInputItems) {
+      qtyByBaseProduct[line.productId] = (qtyByBaseProduct[line.productId] ?? 0) + line.qty;
+    }
+    for (const product of found) {
+      const totalQty = qtyByBaseProduct[String(product._id)] ?? 0;
+      if (totalQty > product.stock) {
+        throw new BadRequestException(
+          `Total quantity for ${product.name} exceeds available stock (${product.stock}m)`,
+        );
+      }
+    }
+
     const items = sanitizedInputItems.map((line) => {
       const product = found.find((p) => String(p._id) === line.productId || p.id === line.productId)!;
 
-      if (line.qty < product.moq || line.qty > product.stock) {
+      if (line.qty < product.moq) {
         throw new BadRequestException(
-          `Quantity for ${product.name} is invalid (Available stock: ${product.stock}m)`,
+          `Quantity for ${product.name} is below the minimum order of ${product.moq}m`,
         );
       }
 
@@ -79,11 +94,16 @@ export class OrdersService {
       };
     });
 
-    // Decrement stock for each ordered item
+    // Decrement stock for each base product (aggregate all color-variant quantities)
+    const stockDecrements: Record<string, number> = {};
+    for (const item of items) {
+      const key = String(item.productId);
+      stockDecrements[key] = (stockDecrements[key] ?? 0) + item.qty;
+    }
     await Promise.all(
-      items.map((item) =>
-        this.products.findByIdAndUpdate(item.productId, {
-          $inc: { stock: -item.qty },
+      Object.entries(stockDecrements).map(([productId, totalQty]) =>
+        this.products.findByIdAndUpdate(productId, {
+          $inc: { stock: -totalQty },
         }),
       ),
     );
