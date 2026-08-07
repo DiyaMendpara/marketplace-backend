@@ -63,9 +63,10 @@ ${context}`,
         
         const parsed = JSON.parse(jsonStr);
         if (parsed.reply) {
-          const recommendedProducts = parsed.productIds
+          const recommendedProducts = (parsed.productIds
             ? catalog.filter((p) => parsed.productIds.includes(p._id.toString()))
-            : matches;
+            : matches
+          ).map((p) => ({ ...p, id: p._id.toString() }));
           return { reply: parsed.reply, products: recommendedProducts };
         }
       } catch (e) {
@@ -79,6 +80,6 @@ ${context}`,
         ? "Here is the comparison between the selected products. Check their specs below."
         : `I found ${matches.length} option${matches.length === 1 ? '' : 's'}. Compare them below:`
       : 'Tell me the fabric type, intended use, and target price. I will narrow the catalog.';
-    return { reply, products: matches };
+    return { reply, products: matches.map((p) => ({ ...p, id: p._id.toString() })) };
   }
 }
