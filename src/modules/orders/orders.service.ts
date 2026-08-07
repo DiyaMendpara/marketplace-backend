@@ -34,7 +34,12 @@ export class OrdersService {
       throw new BadRequestException('At least one item is required');
     }
 
-    const productIds = input.items.map((i) => i.productId);
+    const sanitizedInputItems = input.items.map((i) => ({
+      ...i,
+      productId: i.productId.replace(/__color_\d+$/, ''),
+    }));
+
+    const productIds = sanitizedInputItems.map((i) => i.productId);
     const found = await this.products.find({ _id: { $in: productIds } });
 
     if (found.length !== productIds.length) {
@@ -45,12 +50,12 @@ export class OrdersService {
     const supplierUserIds = [...new Set(found.map((p) => p.supplier?.toString()).filter(Boolean))];
     const supplierUsers = await this.users.find({ _id: { $in: supplierUserIds } }).lean();
 
-    const items = input.items.map((line) => {
-      const product = found.find((p) => p.id === line.productId)!;
+    const items = sanitizedInputItems.map((line) => {
+      const product = found.find((p) => String(p._id) === line.productId || p.id === line.productId)!;
 
       if (line.qty < product.moq || line.qty > product.stock) {
         throw new BadRequestException(
-          `Quantity for ${product.name} is invalid`,
+          `Quantity for ${product.name} is invalid (Available stock: ${product.stock}m)`,
         );
       }
 
