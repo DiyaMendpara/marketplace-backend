@@ -90,7 +90,13 @@ export class ProductsService {
     dto: CreateProductDto,
     supplierId: string,
   ): Promise<ProductDocument> {
-    const product = await this.productModel.create({ ...dto, supplier: supplierId });
+    const productData = {
+      ...dto,
+      description: dto.description || '',
+      swatch: dto.swatch || '#c7d2fe',
+      supplier: supplierId,
+    };
+    const product = await this.productModel.create(productData);
 
     // Notify subscribed buyers of the new fabric
     this.notificationsService.notifySubscribedBuyers(

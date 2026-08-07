@@ -17,8 +17,9 @@ export class CreateProductDto {
   @IsString()
   fabricType: string;
 
+  @IsOptional()
   @IsString()
-  description: string;
+  description?: string;
 
   @IsNumber()
   @Min(0)
@@ -36,8 +37,9 @@ export class CreateProductDto {
   @IsArray()
   colors?: { name: string; hex: string; image?: string }[];
 
+  @IsOptional()
   @IsString()
-  swatch: string;
+  swatch?: string;
 
   @IsOptional()
   @IsArray()
